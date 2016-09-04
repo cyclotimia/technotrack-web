@@ -1,24 +1,31 @@
 #!/usr/local/bin/python
 
+# implement serving multiple users by forking, as opposed to simple.py
+
 import os
 import socket
 import sys
 
+server_socket = socket.socket() # выдел память под сокет
+server_socket.bind(('', 8080)) # '' is an ip address; by '' we listen to all ip addresses
+server_socket.listen(10) # 10 is queue size
 
-server_socket = socket.socket()
-server_socket.bind(('', 8080))
-server_socket.listen(10)
-
-while True:
-    client_socket, remote_address = server_socket.accept()
-    child_pid = os.fork()
-    if child_pid == 0:
+while True: # родительскому процессу из цикла выходить не нужно, он слушает постоянно
+    client_socket, remote_address = server_socket.accept() 
+    # ^^ выделяется дескриптор процесса (handle)
+    # при этом текущ процесс переходит в сост-е sleep пока не приконнектится следующий
+    child_pid = os.fork() # return 0 or child_pid
+    # ^^ как только кто-то приконнектится - после принятия каждого нового соед-я форкаемся
+    # форк = создать дочерний процесс-копию текущего процесса со всей его памятью, стеком, дескрипторами и тд
+    if child_pid == 0: # значит находимся во вновь созданном, дочернем процессе
+    # работа дочернего процесса:
         request = client_socket.recv(1024)
         client_socket.send(request.upper())
         print '(child {}) {} : {}'.format(client_socket.getpeername(), request)
         client_socket.close()
-        sys.exit()
-    else:
+        sys.exit() 
+        # отработали и завершили дочерний процесс
+    else: # если не 0, то продолжается вып-е родительского процесса
         client_socket.close()
 
 server_socket.close()
