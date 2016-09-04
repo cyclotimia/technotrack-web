@@ -12,7 +12,8 @@ server_socket.listen(10) # 10 is queue size
 
 while True: # родительскому процессу из цикла выходить не нужно, он слушает постоянно
     client_socket, remote_address = server_socket.accept() 
-    # ^^ выделяется дескриптор процесса (handle)
+    # читай мануал - https://docs.python.org/2/library/socket.html#socket-objects
+    # ^^ возвращает выделенный ОСью дескриптор процесса (handle) = это client_socket, и ip адрес с которого к нам пришли
     # при этом текущ процесс переходит в сост-е sleep пока не приконнектится следующий
     child_pid = os.fork() # return 0 or child_pid
     # ^^ как только кто-то приконнектится - после принятия каждого нового соед-я форкаемся
@@ -21,7 +22,7 @@ while True: # родительскому процессу из цикла вых
     # работа дочернего процесса:
         request = client_socket.recv(1024)
         client_socket.send(request.upper())
-        print '(child {}) {} : {}'.format(client_socket.getpeername(), request)
+        print '(child {}) {} : {}'.format(child_pid, client_socket.getpeername(), request)
         client_socket.close()
         sys.exit() 
         # отработали и завершили дочерний процесс
