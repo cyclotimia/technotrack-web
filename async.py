@@ -24,18 +24,23 @@ excepts = [] # ошибки
 while 1:
     input_ready, output_ready, except_ready = select.select(list(inputs), outputs.keys(), excepts, 0.5)
     # https://docs.python.org/3/library/select.html#select.select
+    # с таймаутом 0,5 вернет нам 3 списка: сокеты из которых надо читать, сокеты в которые можно писать сейчас, сокеты в к-х произошла ошибка
+    # и мы просто итерируемся по трем этим спискам
     for s in input_ready:
-        if s == server_socket:
+        if s == server_socket: # если пришел новый
             client_socket, remote_address = server_socket.accept()
             client_socket.setblocking(0)
-            inputs.add(client_socket)
+            inputs.add(client_socket) # добавляем клиента в список сокетов из которых читаем
         else:
-            request = s.recv(1024)
+            request = s.recv(1024) # если уже есть в списке
+            # socket.recv(bufsize[, flags])
+# Receive data from the socket. The return value is a bytes object representing the data received. 
+# The maximum amount of data to be received at once is specified by bufsize.
             print '{} : {}'.format(s.getpeername(), request)
-            outputs[s] = request.upper()
-            inputs.remove(s)
+            outputs[s] = request.upper() # переводим полученный ответ в апперкейс и закидываем в список outputs под индексом s
+            inputs.remove(s) # удаляем s из списка на вывод
     for s in output_ready:
         if s in outputs:
-            s.send(outputs[s])
-            del outputs[s]
+            s.send(outputs[s]) # шлем
+            del outputs[s] # удаляем
             s.close()
